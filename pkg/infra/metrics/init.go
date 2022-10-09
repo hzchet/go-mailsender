@@ -14,7 +14,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
-var tracer = otel.Tracer("mailsender")
+var tracer = otel.Tracer("MAILSENDER")
 
 type MetricsContainer struct {
 	*jaeger.Exporter

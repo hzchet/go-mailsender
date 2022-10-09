@@ -1,11 +1,12 @@
 package logger
 
-
 import (
 	"fmt"
 
+	"github.com/TheZeroSlave/zapsentry"
 	"github.com/caarlos0/env"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Logger = *zap.Logger
@@ -13,6 +14,7 @@ type Logger = *zap.Logger
 
 type Config struct {
 	IsProd bool `env:"IS_PROD" envDefault:"false"`
+	Dsn string `env:"SENTRY_ADDRESS" envDefault:""`
 }
 
 func New() (Logger, error) {
@@ -33,7 +35,30 @@ func New() (Logger, error) {
 		return nil, fmt.Errorf("create logger failed: %w", err)
 	}
 
+	l = initSentry(l, cfg.Dsn, "myenv")
+
 	zap.ReplaceGlobals(l)
 
 	return l, nil
+}
+
+func initSentry(log *zap.Logger, sentryAddress, environment string) *zap.Logger {
+	if sentryAddress == "" {
+		return log
+	}
+
+	cfg := zapsentry.Configuration{
+		Level: zapcore.ErrorLevel,
+		Tags: map[string]string{
+			"environment": environment,
+			"app":         "demoApp",
+		},
+	}
+
+	core, err := zapsentry.NewCore(cfg, zapsentry.NewSentryClientFromDSN(sentryAddress))
+	if err != nil {
+		log.Warn("failed to init zap", zap.Error(err))
+	}
+
+	return zapsentry.AttachCoreToLogger(core, log)
 }
